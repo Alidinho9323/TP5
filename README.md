@@ -1,61 +1,74 @@
 # TP5 Qt : Communication avec une BDD MySQL
 
-Ce projet montre comment utiliser Qt pour créer une interface graphique dynamique permettant de communiquer avec une base de données MySQL sous Linux.
+Ce projet illustre comment utiliser Qt pour créer une interface graphique interactive et communiquer avec une base de données MySQL sous Linux.
 
-## Objectifs pédagogiques
+## Objectifs
 
-- Configurer une application Qt avec un accès MySQL sous Linux.
-- Créer une interface utilisateur dynamique pour lire et modifier les données d'une base MySQL.
+- Configurer une application Qt pour accéder à une base MySQL.
+- Créer une interface utilisateur qui permet de lire et modifier les données de manière simple.
 
-## Sommaire
+## Table des matières
 
-1. [Création de la base de données](#1-création-de-la-base-de-données)
-2. [Accès à la BDD](#2-accès-à-la-bdd)
-3. [Affichage graphique](#3-affichage-graphique)
-4. [Configuration Qt et MySQL sous Ubuntu](#4-configuration-qt-et-mysql-sous-ubuntu)
+1. [Préparation de la base de données](#1-préparation-de-la-base-de-données)
+2. [Connexion à la base de données](#2-connexion-à-la-base-de-données)
+3. [Création de l'interface graphique](#3-création-de-linterface-graphique)
+4. [Configuration de Qt et MySQL](#4-configuration-de-qt-et-mysql)
 
 ---
 
-## 1. Création de la base de données
+## 1. Préparation de la base de données
 
-### Créez une base de données MySQL :
+Avant de commencer, configure une base de données MySQL. Voici les étapes :
 
-Utilisez la ligne de commande MySQL ou un outil comme MySQL Workbench.
+### Crée la base de données et la table
 
-### Ajoutez une table :
-
-Table `jeu` avec :
-
-- Une clé primaire `id` (int).
-- Colonnes : `Nom` (varchar), `club` (varchar), `note` (int).
-
-### Insérez des données :
+1. Connecte-toi à MySQL depuis le terminal ou un outil comme MySQL Workbench.
+2. Exécute les commandes suivantes pour créer une base de données et une table :
 
 ```sql
-INSERT INTO `jeu`(`id`, `Nom`, `club`, `note`) VALUES 
-(1, 'Ronaldo', 'Madrid', 5),
-(2, 'Griezmann', 'Barca', 4),
-(3, 'Messi', 'Paris', 5),
-(4, 'Mbappe', 'Paris', 4),
-(5, 'Ozil', 'Madrid', 5),
-(6, 'Arda Guler', 'Madrid', 4);
-```
+CREATE DATABASE jeu;
+USE jeu;
 
-## 2. Accès à la BDD
+CREATE TABLE jeu (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    Nom VARCHAR(50),
+    Club VARCHAR(50),
+    Note INT
+);
+```
+### Insère des données d'exemple
+
+Ajoute des données pour tester l'application :
+
+```sql
+INSERT INTO jeu (Nom, Club, Note) VALUES
+('Ronaldo', 'Madrid', 5),
+('Griezmann', 'Barca', 4),
+('Messi', 'Paris', 5),
+('Mbappe', 'Paris', 4),
+('Ozil', 'Madrid', 5),
+('Arda Guler', 'Madrid', 4);
+```
+## 2. Connexion à la base de données
 
 ### Préparation du projet Qt
 
-Ajoutez les modules nécessaires dans le fichier `.pro` :
+1. Crée un nouveau projet Qt.
+2. Ajoute les modules nécessaires dans le fichier `.pro` :
 
 ```pro
 QT += core gui sql
 CONFIG += c++17
 ```
-# Connexion à MySQL
+### Code de connexion
 
-### Exemple de code pour se connecter à la base de données :
+Ajoute ce code dans ton projet pour te connecter à la base de données :
 
 ```cpp
+#include <QSqlDatabase>
+#include <QSqlError>
+#include <QDebug>
+
 QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
 db.setDatabaseName("jeu");
 db.setHostName("127.0.0.1");
@@ -65,21 +78,17 @@ db.setPassword("Passciel2");
 
 if (!db.open()) {
     qDebug() << "Erreur de connexion : " << db.lastError().text();
+} else {
+    qDebug() << "Connexion réussie à la base de données.";
 }
 ```
-# 3. Affichage graphique
+Teste ce code pour vérifier que la connexion fonctionne.
 
-## Interface utilisateur
+## 3. Création de l'interface graphique
 
-La fenêtre principale contient :
-- Un tableau (`QTableWidget`) pour afficher les données de la base de données.
-- Des champs de saisie pour modifier les données directement dans l'interface.
+### Ajoute un tableau pour afficher les données
 
----
-
-## Connexion des données à l'interface
-
-Exemple pour remplir le tableau avec les données de la BDD :
+Dans l'interface utilisateur, ajoute un `QTableWidget` et utilise ce code pour afficher les données de la base de données :
 
 ```cpp
 QTableWidget *tableWidget = new QTableWidget;
@@ -90,50 +99,56 @@ QSqlQuery query("SELECT * FROM jeu");
 int row = 0;
 while (query.next()) {
     tableWidget->insertRow(row);
-    tableWidget->setItem(row, 0, new QTableWidgetItem(query.value(1).toString()));
-    tableWidget->setItem(row, 1, new QTableWidgetItem(query.value(2).toString()));
-    tableWidget->setItem(row, 2, new QTableWidgetItem(query.value(3).toString()));
+    tableWidget->setItem(row, 0, new QTableWidgetItem(query.value("Nom").toString()));
+    tableWidget->setItem(row, 1, new QTableWidgetItem(query.value("Club").toString()));
+    tableWidget->setItem(row, 2, new QTableWidgetItem(query.value("Note").toString()));
     row++;
 }
 ```
-# Mise à jour des données
+### Permet de modifier les données
 
-Exemple pour modifier une note dans la base de données via l'interface :
+Ajoute une fonctionnalité pour modifier les notes directement dans le tableau :
 
 ```cpp
 QObject::connect(tableWidget, &QTableWidget::cellChanged, [&](int row, int column) {
-    if (column == 2) {
+    if (column == 2) {  // La colonne "Note"
         QString nom = tableWidget->item(row, 0)->text();
         int newNote = tableWidget->item(row, column)->text().toInt();
 
         QSqlQuery updateQuery;
-        updateQuery.prepare("UPDATE jeu SET note = :note WHERE Nom = :nom");
+        updateQuery.prepare("UPDATE jeu SET Note = :note WHERE Nom = :nom");
         updateQuery.bindValue(":note", newNote);
         updateQuery.bindValue(":nom", nom);
-        updateQuery.exec();
+        if (!updateQuery.exec()) {
+            qDebug() << "Erreur lors de la mise à jour : " << updateQuery.lastError().text();
+        }
     }
 });
 ```
-# 4. Configuration Qt et MySQL sous Ubuntu
+## 4. Configuration de Qt et MySQL
 
-## Installez les dépendances
+### Installe les dépendances sur Ubuntu
+
+Assure-toi que les bibliothèques nécessaires sont installées :
 
 ```bash
 sudo apt update
 sudo apt install libmysqlclient-dev
 ```
-## Assurez la disponibilité du pilote MySQL
+### Vérifie la disponibilité du pilote MySQL
 
-Le pilote MySQL est inclus avec Qt si les dépendances sont correctement configurées.
+Le pilote MySQL est inclus avec Qt si les dépendances sont correctement configurées. Si tu rencontres des problèmes, vérifie que Qt a été compilé avec le support MySQL.
 
 ---
 
-# Structure du projet
+### Structure du projet
+
+Voici la structure typique du projet :
 
 ```bash
 TP_Qt_MySQL/
 ├── widget.ui       # Interface graphique
-├── widget.h        # Classe Widget (déclarations)
-├── widget.cpp      # Classe Widget (implémentations)
-└── main.cpp        # Point d’entrée du programme
+├── widget.h        # Déclarations de la classe Widget
+├── widget.cpp      # Implémentation de la classe Widget
+└── main.cpp        # Point d'entrée du programme
 ```
