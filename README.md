@@ -152,3 +152,6 @@ TP_Qt_MySQL/
 ├── widget.cpp      # Implémentation de la classe Widget
 └── main.cpp        # Point d'entrée du programme
 ```
+
+[Capture vidéo du 2025-01-08 14-07-18.webm](https://github.com/user-attachments/assets/93b4fdd0-b9e6-4523-b41d-53e31b9406a8)
+
